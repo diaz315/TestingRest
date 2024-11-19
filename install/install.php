@@ -239,26 +239,26 @@ switch ($step) {
                     <div class="control-group ins_3">
                         <label class="control-label" for="db_hostname">Database Host</label>
                         <div class="controls">
-                            <input id="db_hostname" type="text" name="db_hostname" class="input-large ins_4" required data-error="DB Host is required" placeholder="DB Host" value="localhost" />
+                            <input id="db_hostname" type="text" name="db_hostname" class="input-large ins_4" required data-error="DB Host is required" placeholder="DB Host" value="db" />
                             <i class="color_red">Host name could be 127.0.0.1 or localhost or your server hostname</i>
                         </div>
                     </div>
                     <div class="control-group ins_3">
                         <label class="control-label" for="db_username">Database Username</label>
                         <div class="controls">
-                            <input  id="db_username" type="text" name="db_username" class="input-large ins_4" autocomplete="off" required data-error="DB Username is required" placeholder="DB Username" />
+                            <input  id="db_username" type="text" name="db_username" class="input-large ins_4" autocomplete="off" required data-error="DB Username is required" placeholder="DB Username" value="root" />
                         </div>
                     </div>
                     <div class="control-group ins_3">
                         <label class="control-label" for="db_password">Database Password</a></label>
                         <div class="controls">
-                            <input  id="db_password" type="password" name="db_password" class="input-large ins_4" autocomplete="off" data-error="DB Password is required" placeholder="DB Password" />
+                            <input  id="db_password" type="password" name="db_password" class="input-large ins_4" autocomplete="off" data-error="DB Password is required" placeholder="DB Password" value="root"/>
                         </div>
                     </div>
                     <div class="control-group ins_3">
                         <label class="control-label" for="db_name">Database Name</label>
                         <div class="controls">
-                            <input  id="db_name" type="text" name="db_name" class="input-large ins_4" autocomplete="off" required data-error="DB Name is required" placeholder="DB Name" />
+                            <input  id="db_name" type="text" name="db_name" class="input-large ins_4" autocomplete="off" required data-error="DB Name is required" placeholder="DB Name" value="miapp"/>
                         </div>
                     </div>
                     <input id="purchase_code" type="hidden" name="purchase_code" value="<?php echo $_POST['purchase_code']; ?>" />
