@@ -53,7 +53,9 @@ class CI_Model {
      *
      * @return	void
      */
-    public function __construct()
+
+     public function __construct(){}
+    public function __oldconstruct()
     {
         log_message('info', 'Model Class Initialized');
 
