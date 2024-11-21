@@ -195,16 +195,19 @@ FROM tbl_food_menus fm  INNER JOIN (select * from tbl_food_menu_categories where
      * @param string
      * @param int
      */
-    public function top_ten_food_menu($start_date, $end_date,$outlet_id='') {
-        $this->db->select('sum(qty) as totalQty,food_menu_id,menu_name,sale_date');
+    public function top_ten_food_menu($start_date, $end_date, $outlet_id='') {
+        $this->db->select('SUM(qty) as totalQty, 
+                           food_menu_id, 
+                           MAX(menu_name) as menu_name, 
+                           MAX(sale_date) as sale_date');
         $this->db->from('tbl_sales_details');
         $this->db->join('tbl_sales', 'tbl_sales.id = tbl_sales_details.sales_id', 'left');
         $this->db->where('sale_date>=', $start_date);
         $this->db->where('sale_date <=', $end_date); 
-        $this->db->order_by('totalQty desc');
         $this->db->where('tbl_sales_details.outlet_id', $outlet_id);
         $this->db->where('tbl_sales_details.del_status', 'Live');
         $this->db->group_by('food_menu_id');
+        $this->db->order_by('totalQty', 'DESC');
         $this->db->limit(10);
         $result = $this->db->get();   
         
@@ -224,19 +227,23 @@ FROM tbl_food_menus fm  INNER JOIN (select * from tbl_food_menu_categories where
      */
     public function top_ten_customer($start_date, $end_date,$outlet_id='') {
         $company_id = $this->session->userdata('company_id');
-        $this->db->select('sum(tbl_sales.total_payable) as total_payable, tbl_sales.customer_id, tbl_customers.name, tbl_sales.sale_date,tbl_customers.phone');
+        $this->db->select('SUM(tbl_sales.total_payable) as total_payable, 
+                           tbl_sales.customer_id, 
+                           MAX(tbl_customers.name) as name, 
+                           MAX(tbl_sales.sale_date) as sale_date,
+                           MAX(tbl_customers.phone) as phone');
         $this->db->from('tbl_sales');
         $this->db->join('tbl_customers', 'tbl_sales.customer_id = tbl_customers.id', 'left');
         $this->db->where('tbl_sales.sale_date>=', $start_date);
         $this->db->where('tbl_sales.sale_date <=', $end_date);
-        $this->db->order_by('total_payable desc');
         $this->db->where('tbl_sales.outlet_id', $outlet_id);
         $this->db->where('tbl_sales.company_id', $company_id);
         $this->db->where('tbl_sales.del_status', 'Live');
         $this->db->group_by('customer_id');
+        $this->db->order_by('total_payable', 'DESC');
         $this->db->limit(10);
         $result = $this->db->get();
-
+        
         if($result != false){
             return $result->result();
         }else{
