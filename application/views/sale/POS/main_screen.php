@@ -20,6 +20,9 @@ $designation = $this->session->userdata('designation');
 $outlet_id = $this->session->userdata('outlet_id');
 $company_id = $this->session->userdata('company_id');
 $notification_number = 0;
+$image_path = "";
+$sale_price = "";
+
 if(count($notifications)>0){
     $notification_number = count($notifications);
 }
