@@ -165,7 +165,410 @@ class FoodMenu extends Cl_Controller {
             return $id;
         }
     }
+
     public function addEditFoodMenu($encrypted_id = "") {
+        try {
+            $id = $this->custom->encrypt_decrypt($encrypted_id, 'decrypt');
+            $company_id = $this->session->userdata('company_id');
+            
+            if (htmlspecialcharscustom($this->input->post('submit'))) {
+                $product_type = htmlspecialcharscustom($this->input->post($this->security->xss_clean('product_type')));
+    
+                //Process tax information
+                $tax_information = array();
+                $tax_string = '';
+                if($this->input->post('tax_field_percentage') && is_array($this->input->post('tax_field_percentage'))) {
+                    foreach($this->input->post('tax_field_percentage') as $key=>$value) {
+                        if(isset($this->input->post('tax_field_id')[$key]) && 
+                           isset($this->input->post('tax_field_company_id')[$key]) &&
+                           isset($this->input->post('tax_field_name')[$key])) {
+                            
+                            $single_info = array(
+                                'tax_field_id' => $this->input->post('tax_field_id')[$key],
+                                'tax_field_company_id' => $this->input->post('tax_field_company_id')[$key],
+                                'tax_field_name' => $this->input->post('tax_field_name')[$key],
+                                'tax_field_percentage' => ($this->input->post('tax_field_percentage')[$key]=="")?0:$this->input->post('tax_field_percentage')[$key]
+                            );
+                            $tax_string.=($this->input->post('tax_field_name')[$key]).":";
+                            array_push($tax_information,$single_info);
+                        }
+                    }
+                }
+                
+                //Form Validation
+                $this->form_validation->set_rules('name', lang('name'), 'required|max_length[50]');
+                $this->form_validation->set_rules('category_id', lang('category'), 'required|max_length[50]');
+                $this->form_validation->set_rules('veg_item', lang('is_it_veg'), 'required|max_length[50]');
+                $this->form_validation->set_rules('beverage_item', lang('is_it_beverage'), 'required|max_length[50]');
+                $this->form_validation->set_rules('description', lang('description'), 'max_length[200]');
+                $this->form_validation->set_rules('sale_price', lang('sale_price')." ".lang('dine'), 'required|max_length[50]');
+                $this->form_validation->set_rules('sale_price_take_away', lang('sale_price')." ".lang('take_away'), 'required|max_length[50]');
+    
+                //Additional validation for product type 3
+                if($product_type==3) {
+                    $this->form_validation->set_rules('purchase_price', lang('purchase_price'), 'required|numeric|max_length[15]');
+                    $this->form_validation->set_rules('alert_quantity',lang('alert_quantity'), 'required|numeric|max_length[15]');
+                    $this->form_validation->set_rules('ing_category_id',lang('ingredient')." ".lang('category'), 'required|numeric|max_length[15]');
+                }
+    
+                //Validate photo if uploaded
+                if (isset($_FILES['photo']['name']) && $_FILES['photo']['name'] != "") {
+                    $this->form_validation->set_rules('photo', lang('photo'), 'callback_validate_photo');
+                }
+    
+                if ($this->form_validation->run() == TRUE) {
+                    //Prepare food menu info array
+                    $food_menu_info = array();
+                    $food_menu_info['product_type'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('product_type')));
+                    $food_menu_info['name'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('name')));
+                    $food_menu_info['code'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('code')));
+                    $food_menu_info['category_id'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('category_id')));
+                    $food_menu_info['veg_item'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('veg_item')));
+                    $food_menu_info['beverage_item'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('beverage_item')));
+                    $food_menu_info['description'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('description')));
+                    $food_menu_info['sale_price'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('sale_price')));
+                    $food_menu_info['sale_price_take_away'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('sale_price_take_away')));
+                    $food_menu_info['sale_price_delivery'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('sale_price_delivery')));
+    
+                    //Handle cost based on product type
+                    if($product_type==3) {
+                        $food_menu_info['total_cost'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('purchase_price')));
+                    } else {
+                        $food_menu_info['total_cost'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('grand_total_cost')));
+                    }
+    
+                    $food_menu_info['loyalty_point'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('loyalty_point')));
+                    
+                    //Fields for product category
+                    $food_menu_info['purchase_price'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('purchase_price')));
+                    $food_menu_info['alert_quantity'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('alert_quantity')));
+                    $food_menu_info['ing_category_id'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('ing_category_id')));
+    
+                    $food_menu_info['tax_information'] = json_encode($tax_information);
+                    $food_menu_info['tax_string'] = $tax_string;
+                    $food_menu_info['user_id'] = $this->session->userdata('user_id');
+                    $food_menu_info['company_id'] = $this->session->userdata('company_id');
+    
+                    //Handle delivery price for partners
+                    $delivery_person = $this->input->post($this->security->xss_clean('delivery_person'));
+                    $json_data = array();
+                    if(isset($delivery_person) && is_array($delivery_person)) {
+                        foreach ($delivery_person as $row => $value) {
+                            if(isset($_POST['sale_price_delivery_json'][$row])) {
+                                $json_data["index_".$value] = $_POST['sale_price_delivery_json'][$row];
+                            }
+                        }
+                    }
+                    $food_menu_info['delivery_price'] = json_encode($json_data);
+    
+                    //Handle photo upload
+                    if (isset($_FILES['photo']['name']) && $_FILES['photo']['name'] != "") {
+                        $food_menu_info['photo'] = $this->session->userdata('photo');
+                        $this->session->unset_userdata('photo');
+                    }
+    
+                    $this->db->trans_begin(); //Start transaction
+    
+                    if ($id == "") {
+                        //Insert new food menu
+                        $id = $this->Common_model->insertInformation($food_menu_info, "tbl_food_menus");
+                        $this->saveFoodMenusIngredients($_POST['ingredient_id'], $id, 'tbl_food_menus_ingredients');
+                        
+                        if(isLMni()) {
+                            updatePrice($this->session->userdata('company_id'),$id,$food_menu_info['sale_price'],
+                                $food_menu_info['sale_price_take_away'],json_encode($json_data),$food_menu_info['sale_price_delivery']);
+                        }
+                        
+                        $data['autoCode'] = $this->Master_model->generateFoodMenuCode();
+                        $this->session->set_flashdata('exception', lang('insertion_success'));
+    
+                    } else {
+                        //Update existing food menu
+                        $this->Common_model->updateInformation($food_menu_info, $id, "tbl_food_menus");
+                        
+                        if(isLMni()) {
+                            updatePrice($this->session->userdata('company_id'),$id,$food_menu_info['sale_price'],
+                                $food_menu_info['sale_price_take_away'],json_encode($json_data),$food_menu_info['sale_price_delivery']);
+                        }
+                        
+                        $this->Common_model->deletingMultipleFormData('food_menu_id', $id, 'tbl_food_menus_ingredients');
+                        $this->Common_model->deleteStatusChangeWithCustom($id, "parent_id", "tbl_food_menus");
+                        
+                        $this->saveFoodMenusIngredients($_POST['ingredient_id'], $id, 'tbl_food_menus_ingredients');
+                        $data['autoCode'] = $this->Master_model->generateFoodMenuCode();
+                        $this->session->set_flashdata('exception', lang('update_success'));
+                    }
+    
+                    //Handle variations
+                    $vr_tax_counter = $this->input->post($this->security->xss_clean('vr_tax_counter'));
+                    $is_variation = 0;
+                    if(isset($vr_tax_counter) && $vr_tax_counter) {
+                        $is_variation = 1;
+                        if(!empty($_POST['vr_tax_counter'])) {
+                            $i = 1;
+                            foreach($this->input->post('vr_tax_counter') as $key=>$value) {
+                                //Process variation tax information
+                                $vr01_tax_field_id = "vr01_tax_field_id".$i;
+                                $vr01_tax_field_company_id = "vr01_tax_field_company_id".$i;
+                                $vr01_tax_field_name = "vr01_tax_field_name".$i;
+                                $vr01_tax_field_percentage = "vr01_tax_field_percentage".$i;
+                                
+                                $tax_information_variation = array();
+                                $tax_string_variation = '';
+                                
+                                if($this->input->post($vr01_tax_field_percentage) && is_array($this->input->post($vr01_tax_field_percentage))) {
+                                    foreach($this->input->post($vr01_tax_field_percentage) as $key1=>$value1) {
+                                        if(isset($this->input->post($vr01_tax_field_id)[$key1]) && 
+                                           isset($this->input->post($vr01_tax_field_company_id)[$key1]) &&
+                                           isset($this->input->post($vr01_tax_field_name)[$key1])) {
+                                            
+                                            $single_info = array(
+                                                'tax_field_id' => $this->input->post($vr01_tax_field_id)[$key1],
+                                                'tax_field_company_id' => $this->input->post($vr01_tax_field_company_id)[$key1],
+                                                'tax_field_name' => $this->input->post($vr01_tax_field_name)[$key1],
+                                                'tax_field_percentage' => ($value1=="")?0:$value1
+                                            );
+                                            $tax_string_variation .= ($this->input->post($vr01_tax_field_name)[$key1]).":";
+                                            array_push($tax_information_variation, $single_info);
+                                        }
+                                    }
+                                }
+    
+                                //Prepare variation food menu info
+                                $food_menu_info_vr = array();
+                                $food_menu_info_vr['name'] = $this->input->post('variation_name')[$key];
+                                $food_menu_info_vr['code'] = $food_menu_info['code']."-".(generateCode($i));
+                                $food_menu_info_vr['total_cost'] = $this->input->post('var01_grand_total_cost_arr')[$key];
+                                $food_menu_info_vr['category_id'] = $food_menu_info['category_id'];
+                                $food_menu_info_vr['veg_item'] = $food_menu_info['veg_item'];
+                                $food_menu_info_vr['beverage_item'] = $food_menu_info['beverage_item'];
+                                $food_menu_info_vr['description'] = $food_menu_info['description'];
+                                $food_menu_info_vr['sale_price'] = $this->input->post('m_sale_price')[$key];
+                                $food_menu_info_vr['sale_price_take_away'] = $this->input->post('m_sale_price_take_away')[$key];
+                                $food_menu_info_vr['sale_price_delivery'] = $this->input->post('m_sale_price_delivery')[$key];
+                                $food_menu_info_vr['vr_ingr'] = $this->input->post('variation_ingrs')[$key];
+                                $food_menu_info_vr['vr_del_details'] = $this->input->post('hidden_delivery_html')[$key];
+                                $food_menu_info_vr['loyalty_point'] = $this->input->post('vr01_loyalty_point_arr')[$key];
+                                $food_menu_info_vr['tax_information'] = json_encode($tax_information_variation);
+                                $food_menu_info_vr['tax_string'] = $tax_string_variation;
+                                $food_menu_info_vr['user_id'] = $this->session->userdata('user_id');
+                                $food_menu_info_vr['company_id'] = $this->session->userdata('company_id');
+                                $food_menu_info_vr['photo'] = isset($food_menu_info['photo']) ? $food_menu_info['photo'] : '';
+                                $food_menu_info_vr['parent_id'] = $id;
+                                $food_menu_info_vr['del_status'] = 'Live';
+    
+                                //Handle variation delivery price
+                                $hidden_delivery_html = $this->input->post($this->security->xss_clean('hidden_delivery_html'));
+                                $json_data_variation = array();
+                                
+                                if(isset($hidden_delivery_html[$key]) && $hidden_delivery_html[$key]) {
+                                    $variation_ingrs_total = explode('|||',$hidden_delivery_html[$key]);
+                                    foreach ($variation_ingrs_total as $row => $value_1) {
+                                        $data_value = explode("||",$value_1);
+                                    if(isset($data_value[0]) && isset($data_value[1])) {
+                                        $json_data_variation["index_".$data_value[1]] = $data_value[0];
+                                    }
+                                }
+                            }
+                            $food_menu_info_vr['delivery_price'] = json_encode($json_data_variation);
+
+                            //Handle variation update or insert
+                            $old_id = $this->input->post('variation_row_update')[$key];
+                            if(isset($old_id) && $old_id) {
+                                $new_variation_id = $this->Common_model->updateInformation($food_menu_info_vr, $old_id, "tbl_food_menus");
+                                if(isLMni()) {
+                                    updatePrice($this->session->userdata('company_id'),
+                                        $old_id,
+                                        $this->input->post('m_sale_price')[$key],
+                                        $this->input->post('m_sale_price_take_away')[$key],
+                                        $food_menu_info_vr['delivery_price'],
+                                        $food_menu_info_vr['sale_price_delivery']
+                                    );
+                                }
+                            } else {
+                                $new_variation_id = $this->Common_model->insertInformation($food_menu_info_vr, "tbl_food_menus");
+                                if(isLMni()) {
+                                    updatePrice($this->session->userdata('company_id'),
+                                        $new_variation_id,
+                                        $this->input->post('m_sale_price')[$key],
+                                        $this->input->post('m_sale_price_take_away')[$key],
+                                        $food_menu_info_vr['delivery_price'],
+                                        $food_menu_info_vr['sale_price_delivery']
+                                    );
+                                }
+                            }
+
+                            //Handle variation ingredients
+                            $this->Common_model->deletingMultipleFormData('food_menu_id', $new_variation_id, 'tbl_food_menus_ingredients');
+                            $variation_ingrs = $this->input->post($this->security->xss_clean('variation_ingrs'));
+
+                            if(isset($variation_ingrs[$key]) && $variation_ingrs[$key]) {
+                                $variation_ingrs_arr = explode("|||",$variation_ingrs[$key]);
+                                if(is_array($variation_ingrs_arr)) {
+                                    foreach ($variation_ingrs_arr as $single_array) {
+                                        $single_array_arr = explode("||",$single_array);
+                                        if(isset($single_array_arr[1]) && $single_array_arr[1]) {
+                                            $fmi = array();
+                                            $fmi['ingredient_id'] = $single_array_arr[1];
+                                            $fmi['consumption'] = isset($single_array_arr[3]) ? $single_array_arr[3] : 0;
+                                            $fmi['cost'] = isset($single_array_arr[4]) ? $single_array_arr[4] : 0;
+                                            $fmi['total'] = isset($single_array_arr[5]) ? $single_array_arr[5] : 0;
+                                            $fmi['food_menu_id'] = $new_variation_id;
+                                            $fmi['user_id'] = $this->session->userdata('user_id');
+                                            $fmi['company_id'] = $this->session->userdata('company_id');
+                                            $this->Common_model->insertInformation($fmi, "tbl_food_menus_ingredients");
+                                        }
+                                    }
+                                }
+                            }
+                            $i++;
+                        }
+                    }
+                }
+
+                //Handle combo menus
+                $this->Common_model->deletingMultipleFormData('food_menu_id', $id, 'tbl_combo_food_menus');
+                $food_menu_id_hidden = $this->input->post($this->security->xss_clean('food_menu_id_hidden'));
+                $combo_ids = '';
+
+                if(isset($food_menu_id_hidden) && is_array($food_menu_id_hidden) && $product_type==2) {
+                    foreach ($food_menu_id_hidden as $row => $single_array) {
+                        $single_array_arr = explode("||",$single_array);
+                        if(isset($single_array_arr[0]) && isset($single_array_arr[1])) {
+                            $fmi = array();
+                            $fmi['name'] = trim_checker($single_array_arr[1]);
+                            $fmi['food_menu_id'] = $id;
+                            $fmi['added_food_menu_id'] = $single_array_arr[0];
+                            $fmi['quantity'] = isset($_POST['qty_food_menu'][$row]) ? $_POST['qty_food_menu'][$row] : 1;
+                            $fmi['user_id'] = $this->session->userdata('user_id');
+                            $fmi['company_id'] = $this->session->userdata('company_id');
+                            $this->Common_model->insertInformation($fmi, "tbl_combo_food_menus");
+                            $combo_ids .= $single_array_arr[0] . ",";
+                        }
+                    }
+                }
+
+                //Update variation and combo info
+                $data_combo_ids['is_variation'] = $is_variation;
+                $data_combo_ids['combo_ids'] = $combo_ids;
+                $this->Common_model->updateInformation($data_combo_ids, $id, "tbl_food_menus");
+
+                //Handle product type 3 specific logic
+                if($product_type==3) {
+                    $fmc_info = array();
+                    $fmc_info['name'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('name')));
+                    $fmc_info['code'] = $this->Master_model->generateIngredientCode();
+                    $fmc_info['purchase_price'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('purchase_price')));
+                    $fmc_info['alert_quantity'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('alert_quantity')));
+                    $fmc_info['unit_id'] = $this->get_unit_id("Pcs");
+                    $fmc_info['purchase_unit_id'] = $this->get_unit_id("Pcs");
+                    $fmc_info['consumption_unit_cost'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('purchase_price')));
+                    $fmc_info['category_id'] = htmlspecialcharscustom($this->input->post($this->security->xss_clean('ing_category_id')));
+                    $fmc_info['conversion_rate'] = 1;
+                    $fmc_info['is_direct_food'] = 2;
+                    $fmc_info['food_id'] = $id; 
+                    $fmc_info['user_id'] = $this->session->userdata('user_id');
+                    $fmc_info['company_id'] = $this->session->userdata('company_id');
+                    setIngredients($id, $fmc_info);
+                }
+
+                if ($this->db->trans_status() === FALSE) {
+                    $this->db->trans_rollback();
+                    $this->session->set_flashdata('exception_err', 'Something went wrong, please try again!');
+                } else {
+                    $this->db->trans_commit();
+                    if($id=="") {
+                        $this->session->set_flashdata('exception', lang('insertion_success'));
+                    } else {
+                        $this->session->set_flashdata('exception', lang('update_success'));
+                    }
+                }
+
+                //Clean output buffer before redirect
+                if (ob_get_length()) {
+                    ob_end_clean();
+                }
+                redirect('foodMenu/foodMenus');
+
+            } else {
+                if ($id == "") {
+                    $data = array();
+                    $data['ing_categories'] = $this->Common_model->getAllByCompanyIdForDropdown($company_id, 'tbl_ingredient_categories');
+                    $data['categories'] = $this->Common_model->getAllByCompanyId($company_id, 'tbl_food_menu_categories');
+                    $data['autoCode'] = $this->Master_model->generateFoodMenuCode();
+                    $data['ingredients'] = $this->Master_model->getIngredientListWithUnit($company_id);
+                    $data['food_menus'] = $this->Common_model->getFoodMenuWithVariations($company_id, 'tbl_food_menus');
+                    foreach ($data['food_menus'] as $key=>$value) {
+                        $variations = $this->Common_model->getAllByCustomId($value->id,"parent_id","tbl_food_menus",$order='');
+                        $data['food_menus'][$key]->is_variation = isset($variations) && $variations ? 'Yes' : 'No';
+                    }
+                    $data['deliveryPartners'] = $this->Common_model->getAllByCompanyId($company_id, "tbl_delivery_partners");
+                    $data['main_content'] = $this->load->view('master/foodMenu/addFoodMenu', $data, TRUE);
+                    $this->load->view('userHome', $data);
+                } else {
+                    $data = array();
+                    $data['encrypted_id'] = $encrypted_id;
+                    $data['ing_categories'] = $this->Common_model->getAllByCompanyIdForDropdown($company_id, 'tbl_ingredient_categories');
+                    $data['categories'] = $this->Common_model->getAllByCompanyId($company_id, 'tbl_food_menu_categories');
+                    $data['autoCode'] = $this->Master_model->generateFoodMenuCode();
+                    $data['ingredients'] = $this->Master_model->getIngredientListWithUnit($company_id);
+                    $data['food_menus'] = $this->Common_model->getFoodMenuWithVariations($company_id, 'tbl_food_menus');
+                    foreach ($data['food_menus'] as $key=>$value) {
+                        $variations = $this->Common_model->getAllByCustomId($value->id,"parent_id","tbl_food_menus",$order='');
+                        $data['food_menus'][$key]->is_variation = isset($variations) && $variations ? 'Yes' : 'No';
+                    }
+                    $data['food_menu_details'] = $this->Common_model->getDataById($id, "tbl_food_menus");
+                    $data['variation_food_menus'] = $this->Common_model->getAllByCustomId($id,"parent_id","tbl_food_menus",$order='');
+                    $data['added_combo_menus'] = $this->Common_model->getAllByCustomId($id,"food_menu_id","tbl_combo_food_menus",$order='');
+                    $data['deliveryPartners'] = $this->Common_model->getAllByCompanyId($company_id, "tbl_delivery_partners");
+                    $data['food_menu_ingredients'] = $this->Master_model->getFoodMenuIngredients($data['food_menu_details']->id);
+                    $data['main_content'] = $this->load->view('master/foodMenu/editFoodMenu', $data, TRUE);
+                    $this->load->view('userHome', $data);
+                }
+            }
+        } else {
+            if ($id == "") {
+                $data = array();
+                $data['ing_categories'] = $this->Common_model->getAllByCompanyIdForDropdown($company_id, 'tbl_ingredient_categories');
+                $data['categories'] = $this->Common_model->getAllByCompanyId($company_id, 'tbl_food_menu_categories');
+                $data['autoCode'] = $this->Master_model->generateFoodMenuCode();
+                $data['ingredients'] = $this->Master_model->getIngredientListWithUnit($company_id);
+                $data['food_menus'] = $this->Common_model->getFoodMenuWithVariations($company_id, 'tbl_food_menus');
+                foreach ($data['food_menus'] as $key=>$value) {
+                    $variations = $this->Common_model->getAllByCustomId($value->id,"parent_id","tbl_food_menus",$order='');
+                    $data['food_menus'][$key]->is_variation = isset($variations) && $variations ? 'Yes' : 'No';
+                }
+                $data['deliveryPartners'] = $this->Common_model->getAllByCompanyId($company_id, "tbl_delivery_partners");
+                $data['main_content'] = $this->load->view('master/foodMenu/addFoodMenu', $data, TRUE);
+                $this->load->view('userHome', $data);
+            } else {
+                $data = array();
+                $data['encrypted_id'] = $encrypted_id;
+                $data['ing_categories'] = $this->Common_model->getAllByCompanyIdForDropdown($company_id, 'tbl_ingredient_categories'); 
+                $data['categories'] = $this->Common_model->getAllByCompanyId($company_id, 'tbl_food_menu_categories');
+                $data['ingredients'] = $this->Master_model->getIngredientListWithUnit($company_id);
+                $data['food_menus'] = $this->Common_model->getFoodMenuWithVariations($company_id, 'tbl_food_menus');
+                foreach ($data['food_menus'] as $key=>$value) {
+                    $variations = $this->Common_model->getAllByCustomId($value->id,"parent_id","tbl_food_menus",$order='');
+                    $data['food_menus'][$key]->is_variation = isset($variations) && $variations ? 'Yes' : 'No';
+                }
+                $data['autoCode'] = $this->Master_model->generateFoodMenuCode();
+                $data['food_menu_details'] = $this->Common_model->getDataById($id, "tbl_food_menus");
+                $data['variation_food_menus'] = $this->Common_model->getAllByCustomId($id,"parent_id","tbl_food_menus",$order='');
+                $data['added_combo_menus'] = $this->Common_model->getAllByCustomId($id,"food_menu_id","tbl_combo_food_menus",$order='');
+                $data['food_menu_ingredients'] = $this->Master_model->getFoodMenuIngredients($data['food_menu_details']->id);
+                $data['deliveryPartners'] = $this->Common_model->getAllByCompanyId($company_id, "tbl_delivery_partners");
+                $data['main_content'] = $this->load->view('master/foodMenu/editFoodMenu', $data, TRUE);
+                $this->load->view('userHome', $data);
+            }
+        }
+    } catch (Exception $e) {
+        $this->db->trans_rollback();
+        $this->session->set_flashdata('exception_err', $e->getMessage());
+        redirect('foodMenu/foodMenus');
+    }
+}
+    public function addEditFoodMenuOld($encrypted_id = "") {
         $id = $this->custom->encrypt_decrypt($encrypted_id, 'decrypt');
         $company_id = $this->session->userdata('company_id');
         if (htmlspecialcharscustom($this->input->post('submit'))) {
