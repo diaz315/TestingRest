@@ -530,7 +530,77 @@ class FoodMenu extends Cl_Controller {
      * @return string
      * @param no
      */
-    public function validate_photo() {
+
+     public function validate_photo() {
+        if ($_FILES['photo']['name'] != "") {
+            // Create image directories if they don't exist
+            $image_path = FCPATH . 'images';
+            $thumb_path = FCPATH . 'images/thumb';
+            
+            if (!is_dir($image_path)) {
+                mkdir($image_path, 0775, true);
+                chmod($image_path, 0775);
+            }
+            
+            if (!is_dir($thumb_path)) {
+                mkdir($thumb_path, 0775, true);
+                chmod($thumb_path, 0775);
+            }
+    
+            // Upload configuration
+            $config['upload_path'] = $image_path;
+            $config['allowed_types'] = 'jpg|jpeg|png';
+            $config['max_size'] = '2048';
+            $config['maintain_ratio'] = TRUE;
+            $config['encrypt_name'] = TRUE;
+            $config['detect_mime'] = TRUE;
+            $config['file_permissions'] = 0664;
+    
+            $this->load->library('upload', $config);
+    
+            if ($this->upload->do_upload("photo")) {
+                $upload_info = $this->upload->data();
+                $photo = $upload_info['file_name'];
+    
+                // Image resize configuration
+                $resize_config = array(
+                    'image_library' => 'gd2',
+                    'source_image' => $image_path . '/' . $photo,
+                    'new_image' => $thumb_path . '/' . $photo,
+                    'maintain_ratio' => TRUE,
+                    'width' => 200,
+                    'height' => 100,
+                );
+    
+                $this->load->library('image_lib');
+                $this->image_lib->initialize($resize_config);
+    
+                // Ensure source image is readable
+                chmod($resize_config['source_image'], 0664);
+    
+                if (!$this->image_lib->resize()) {
+                    $error = $this->image_lib->display_errors();
+                    log_message('error', 'Image resize failed: ' . $error);
+                    $this->form_validation->set_message('validate_photo', $error);
+                    return FALSE;
+                }
+    
+                // Set correct permissions for resized image
+                chmod($thumb_path . '/' . $photo, 0664);
+                
+                $this->session->set_userdata('photo', $photo);
+                return TRUE;
+    
+            } else {
+                $error = $this->upload->display_errors();
+                $this->form_validation->set_message('validate_photo', $error);
+                return FALSE;
+            }
+        }
+        return TRUE;
+    }
+    
+    public function validate_photo2() {
 
         if ($_FILES['photo']['name'] != "") {
             $config['upload_path'] = './images';
