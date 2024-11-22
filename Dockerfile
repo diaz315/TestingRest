@@ -11,6 +11,13 @@ RUN apt-get update && \
     docker-php-ext-configure curl && \
     docker-php-ext-install curl
 
+RUN apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev && \
+    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install gd
+
 # Configuración minimalista de PHP y sesiones
 RUN echo "session.save_handler = files" >> /usr/local/etc/php/conf.d/docker-php-session.ini && \
     echo "session.cookie_httponly = 1" >> /usr/local/etc/php/conf.d/docker-php-session.ini
