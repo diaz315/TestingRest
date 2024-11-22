@@ -4,6 +4,9 @@
  * @return string
  * @param string
  */
+
+//$codigo = "fTzfW0nSWIR" -->Viejo;
+
 function escape_output($string){
     if($string){
         return htmlentities($string, ENT_QUOTES, 'UTF-8');
@@ -205,7 +208,7 @@ function isServiceAccess($user_id='',$company_id='',$service_type='') {
     if($company_id==''){
         $company_id = $CI->session->userdata('company_id');
     }
-    if($service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fTzfWnSWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
+    if($service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fZzfWnFWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
         $plugin = $result = $CI->db->query("SELECT * FROM tbl_plugins WHERE del_status='Live' AND bestoro='$service_type' AND active_status='Active'")->result();
         if($plugin){
             if($company_id==1 && $user_id==1){
@@ -257,7 +260,7 @@ function isServiceAccessPlugin($user_id='',$company_id='',$service_type='') {
     if($company_id==''){
         $company_id = $CI->session->userdata('company_id');
     }
-    if($service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fTzfWnSWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
+    if($service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fZzfWnFWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
         $plugin = $result = $CI->db->query("SELECT * FROM tbl_plugins WHERE del_status='Live' AND bestoro='$service_type' AND active_status='Active'")->row();
         if($plugin){
             if($company_id==1){
@@ -280,11 +283,11 @@ function isServiceAccessOnly($service_type='') {
     $CI = & get_instance();
     $status = false;
     $company_id = $CI->session->userdata("company_id");
-    if($company_id==1 && $service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fTzfWnSWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
+    if($company_id==1 && $service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fZzfWnFWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
         return true;
     }else{
         $service_type = str_rot13($service_type);
-        if($service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fTzfWnSWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
+        if($service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fZzfWnFWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
             $plugin = $result = $CI->db->query("SELECT * FROM tbl_plugins WHERE del_status='Live' AND bestoro='$service_type' AND active_status='Active'")->row();
             if(isset($plugin) && $plugin){
                 $status = true;
@@ -353,7 +356,7 @@ function isServiceAccessOnlyLogin($service_type='') {
     $company = getMainCompany();
     $status = false;
     $service_type = str_rot13($service_type);
-    if($service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fTzfWnSWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
+    if($service_type && $service_type =="fTzfWnSWR" && str_rot13($company->languge_manifesto) =="fZzfWnFWIR" &&  file_exists(APPPATH.'controllers/Service.php')){
         $plugin = $result = $CI->db->query("SELECT * FROM tbl_plugins WHERE del_status='Live' AND bestoro='$service_type' AND active_status='Active'")->row();
         if(isset($plugin) && $plugin){
             $status = true;
