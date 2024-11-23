@@ -1,0 +1,6 @@
+{
+    "name": "myapp/proyecto",
+    "require": {
+        "mongodb/mongodb": "^1.20"
+    }
+}

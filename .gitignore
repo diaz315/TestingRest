@@ -484,3 +484,4 @@ $RECYCLE.BIN/
 *.swp
 images/
 qr_code/
+application/vendor/
