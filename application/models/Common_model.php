@@ -1078,7 +1078,7 @@ class Common_model extends CI_Model {
      * @param string
      */
     public function getOrderedPrinter($sales_id){
-        $this->db->select("tbl_printers.*,tbl_kitchens.name as kitchen_name,tbl_kitchens.id as kitchen_id");
+        $this->db->select("tbl_printers.*, tbl_kitchens.name as kitchen_name, tbl_kitchens.id as kitchen_id");
         $this->db->from('tbl_kitchen_sales_details');
         $this->db->join('tbl_food_menus', 'tbl_food_menus.id = tbl_kitchen_sales_details.food_menu_id', 'left');
         $this->db->join('tbl_kitchen_categories', 'tbl_kitchen_categories.cat_id = tbl_food_menus.category_id', 'left');
@@ -1086,10 +1086,9 @@ class Common_model extends CI_Model {
         $this->db->join('tbl_printers', 'tbl_printers.id = tbl_kitchens.printer_id', 'left');
         $this->db->where("sales_id", $sales_id);
         $this->db->where("tbl_kitchen_categories.del_status", "Live");
+        $this->db->group_by('tbl_printers.id, tbl_kitchens.name, tbl_kitchens.id, tbl_kitchen_sales_details.id');
         $this->db->order_by('tbl_kitchen_sales_details.id', 'ASC');
-        $this->db->group_by('tbl_printers.id');
-        $data =  $this->db->get()->result();
-        return $data;
+        return $this->db->get()->result();
     }
     /**
      * check getOrderedKitchens
@@ -1127,7 +1126,7 @@ class Common_model extends CI_Model {
             $this->db->where("tbl_kitchens.outlet_id", $outlet_id);
             $this->db->where("tbl_kitchen_categories.del_status", "Live");
             $this->db->order_by('tbl_kitchen_sales_details.id', 'ASC');
-            $this->db->group_by('tbl_kitchens.id');
+            $this->db->group_by('tbl_kitchens.id,tbl_kitchen_sales_details.id');
             $data =  $this->db->get()->result();
             return $data;
         }
