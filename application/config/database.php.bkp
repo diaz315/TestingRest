@@ -61,43 +61,24 @@
 $active_group = 'default';
 $query_builder = TRUE;
 
-if(true){
-	$db['default'] = array(
-		'dsn'	=> '',
-		'hostname' => 'db',
-		'username' => 'root',
-		'password' => 'root',
-		'database' => 'miapp',
-		'dbdriver' => 'mysqli',
-		'dbprefix' => '',
-		'pconnect' => FALSE,
-		'db_debug' => true,
-		'cache_on' => FALSE,
-		'cachedir' => '',
-		'char_set' => 'utf8',
-		'dbcollat' => 'utf8_general_ci',
-		'swap_pre' => '',
-		'encrypt' => FALSE,
-		'compress' => FALSE,
-		'stricton' => FALSE,
-		'failover' => array(),
-		'save_queries' => FALSE
-	);
-}else{
-	$db['default'] = array(
-		'dsn'      => '',
-		'hostname' => 'mongodb',
-		'username' => '',
-		'password' => '',
-		'database' => 'miapp',
-		'dbdriver' => 'mongodb',
-		'port'     => '27017',
-		'dbprefix' => '',
-		'pconnect' => FALSE,
-		'db_debug' => TRUE,
-		'cache_on' => FALSE,
-		'cachedir' => '',
-		'char_set' => 'utf8',
-		'dbcollat' => 'utf8_general_ci',
-	);
-}
+$db['default'] = array(
+	'dsn'	=> '',
+	'hostname' => '%db_hostname%',
+	'username' => '%db_username%',
+	'password' => '%db_password%',
+	'database' => '%db_name%',
+	'dbdriver' => 'mysqli',
+	'dbprefix' => '',
+	'pconnect' => FALSE,
+	'db_debug' => FALSE,
+	'cache_on' => FALSE,
+	'cachedir' => '',
+	'char_set' => 'utf8',
+	'dbcollat' => 'utf8_general_ci',
+	'swap_pre' => '',
+	'encrypt' => FALSE,
+	'compress' => FALSE,
+	'stricton' => FALSE,
+	'failover' => array(),
+	'save_queries' => FALSE
+);
