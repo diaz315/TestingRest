@@ -30,35 +30,23 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Configurar Apache para permitir .htaccess
-RUN echo "\
-<Directory /var/www/html>\n\
-    Options Indexes FollowSymLinks\n\
-    AllowOverride All\n\
-    Require all granted\n\
-</Directory>" > /etc/apache2/conf-available/custom-directory.conf
-
-RUN a2enconf custom-directory
-
-# Create directories and set permissions
-RUN mkdir -p /var/www/html/images \
-    /var/www/html/images/thumb \
-    /var/www/html/application/cache \
-    /var/www/html/application/logs \
-    /var/www/.composer/cache
-
-# Set permissions with more verbose configuration
-RUN chown -R www-data:www-data /var/www && \
-    find /var/www/html -type d -exec chmod 755 {} \; && \
-    find /var/www/html -type f -exec chmod 644 {} \; && \
-    chmod -R 775 /var/www/html/images && \
-    chmod -R 775 /var/www/html/images/thumb && \
-    chmod -R 775 /var/www/html/application/cache && \
-    chmod -R 775 /var/www/html/application/logs && \
-    chmod -R 775 /var/www/.composer
+# Configurar Apache
+RUN { \
+    echo '<Directory /var/www/html>'; \
+    echo '  Options Indexes FollowSymLinks'; \
+    echo '  AllowOverride All'; \
+    echo '  Require all granted'; \
+    echo '</Directory>'; \
+} > /etc/apache2/conf-available/docker-php.conf \
+    && a2enconf docker-php
 
 WORKDIR /var/www/html
 
+# Este script se ejecutará al iniciar el contenedor
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 80
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
