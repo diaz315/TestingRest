@@ -8,6 +8,8 @@ services:
       - "0.0.0.0:80:80"
     volumes:
       - ./:/var/www/html:cached
+      - app_logs:/var/www/html/application/logs
+      - app_cache:/var/www/html/application/cache
     environment:
       - PHP_DISPLAY_ERRORS=1
       - PHP_ERROR_REPORTING=E_ALL
@@ -38,3 +40,5 @@ networks:
 
 volumes:
   mysql_data:
+  app_logs:
+  app_cache:

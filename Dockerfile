@@ -1,4 +1,3 @@
-# Dockerfile
 FROM php:7.4-apache
 
 # Install system dependencies
@@ -35,17 +34,23 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf && \
     a2enconf servername
 
-# Configurar VirtualHost
-RUN echo '<VirtualHost *:80>\n\
-    ServerName localhost\n\
-    DocumentRoot /var/www/html\n\
-    <Directory /var/www/html>\n\
-        Options Indexes FollowSymLinks MultiViews\n\
-        AllowOverride All\n\
-        Require all granted\n\
-        Order allow,deny\n\
-        allow from all\n\
-    </Directory>\n\
-    ErrorLog ${APACHE_LOG_DIR}/error.log\n\
-    CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
-</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+# Crear directorios necesarios y establecer permisos
+RUN mkdir -p /var/www/html/application/logs \
+    /var/www/html/application/cache \
+    /var/www/html/images && \
+    chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 /var/www/html && \
+    chmod -R 777 /var/www/html/application/logs && \
+    chmod -R 777 /var/www/html/application/cache && \
+    chmod -R 777 /var/www/html/images
+
+WORKDIR /var/www/html
+
+# Script de entrada para verificar permisos en cada inicio
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 80
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
