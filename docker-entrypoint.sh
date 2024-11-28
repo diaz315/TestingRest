@@ -1,6 +1,10 @@
-# docker-entrypoint.sh
 #!/bin/bash
 set -e
+
+# Crear directorios necesarios
+mkdir -p /var/www/html/application/logs
+mkdir -p /var/www/html/application/cache
+mkdir -p /var/www/html/images
 
 # Establecer permisos correctos
 find /var/www/html -type f -exec chmod 644 {} \;
