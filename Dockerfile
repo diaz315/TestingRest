@@ -1,3 +1,4 @@
+# Dockerfile
 FROM php:7.4-apache
 
 # Install system dependencies
@@ -17,36 +18,34 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure and enable Apache modules including MPM
+# Configure and enable Apache modules
 RUN a2dismod mpm_event && \
     a2enmod mpm_prefork && \
     a2enmod rewrite
 
 # Install PHP extensions
-RUN docker-php-ext-install zip
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd mysqli pdo pdo_mysql curl
+RUN docker-php-ext-install zip && \
+    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install -j$(nproc) gd mysqli pdo pdo_mysql curl
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Configurar Apache
-RUN { \
-    echo '<Directory /var/www/html>'; \
-    echo '  Options Indexes FollowSymLinks'; \
-    echo '  AllowOverride All'; \
-    echo '  Require all granted'; \
-    echo '</Directory>'; \
-} > /etc/apache2/conf-available/docker-php.conf \
-    && a2enconf docker-php
+RUN echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf && \
+    a2enconf servername
 
-WORKDIR /var/www/html
-
-# Este script se ejecutará al iniciar el contenedor
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-EXPOSE 80
-
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["apache2-foreground"]
+# Configurar VirtualHost
+RUN echo '<VirtualHost *:80>\n\
+    ServerName localhost\n\
+    DocumentRoot /var/www/html\n\
+    <Directory /var/www/html>\n\
+        Options Indexes FollowSymLinks MultiViews\n\
+        AllowOverride All\n\
+        Require all granted\n\
+        Order allow,deny\n\
+        allow from all\n\
+    </Directory>\n\
+    ErrorLog ${APACHE_LOG_DIR}/error.log\n\
+    CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
