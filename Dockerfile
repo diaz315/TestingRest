@@ -30,6 +30,16 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Configurar Apache para permitir .htaccess
+RUN echo "\
+<Directory /var/www/html>\n\
+    Options Indexes FollowSymLinks\n\
+    AllowOverride All\n\
+    Require all granted\n\
+</Directory>" > /etc/apache2/conf-available/custom-directory.conf
+
+RUN a2enconf custom-directory
+
 # Create directories and set permissions
 RUN mkdir -p /var/www/html/images \
     /var/www/html/images/thumb \
@@ -37,14 +47,15 @@ RUN mkdir -p /var/www/html/images \
     /var/www/html/application/logs \
     /var/www/.composer/cache
 
-# Set permissions
+# Set permissions with more verbose configuration
 RUN chown -R www-data:www-data /var/www && \
-    chmod -R 755 /var/www/html && \
-    chmod -R 775 /var/www/html/images \
-    /var/www/html/images/thumb \
-    /var/www/html/application/cache \
-    /var/www/html/application/logs \
-    /var/www/.composer
+    find /var/www/html -type d -exec chmod 755 {} \; && \
+    find /var/www/html -type f -exec chmod 644 {} \; && \
+    chmod -R 775 /var/www/html/images && \
+    chmod -R 775 /var/www/html/images/thumb && \
+    chmod -R 775 /var/www/html/application/cache && \
+    chmod -R 775 /var/www/html/application/logs && \
+    chmod -R 775 /var/www/.composer
 
 WORKDIR /var/www/html
 
