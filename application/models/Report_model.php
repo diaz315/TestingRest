@@ -1192,7 +1192,12 @@ FROM tbl_food_menus_ingredients i  LEFT JOIN (select * from tbl_ingredients wher
     }
     public function totalFoodSales($startMonth = '', $endMonth = '',$outlet_id='',$top_less='') {
         if ($startMonth || $endMonth):
-            $this->db->select('sum(qty) as totalQty,sum(menu_price_without_discount) net_sales, food_menu_id,menu_name,code,sale_date');
+            $this->db->select('sum(qty) as totalQty,
+            sum(menu_price_without_discount) as net_sales, 
+            tbl_sales_details.food_menu_id,
+            MAX(tbl_food_menus.menu_name) as menu_name,
+            MAX(tbl_food_menus.code) as code,
+            MAX(tbl_sales.sale_date) as sale_date');
             $this->db->from('tbl_sales_details');
             $this->db->join('tbl_sales', 'tbl_sales.id = tbl_sales_details.sales_id', 'left');
             $this->db->join('tbl_food_menus', 'tbl_food_menus.id = tbl_sales_details.food_menu_id', 'left');
@@ -1383,7 +1388,7 @@ FROM tbl_food_menus_ingredients i  LEFT JOIN (select * from tbl_ingredients wher
         return $result;
     }
     public function getAllOtherSalePaymentZReport($startMonth = '',$outlet_id='') {
-        $this->db->select('sum(amount) as total_amount,multi_currency,payment_id');
+        $this->db->select('sum(amount) as total_amount,MAX(multi_currency) as multi_currency,payment_id');
         $this->db->from('tbl_sale_payments');
         $this->db->join('tbl_sales', 'tbl_sales.id = tbl_sale_payments.sale_id', 'left');
         $this->db->where('sale_date', $startMonth);
