@@ -5,6 +5,7 @@ set -e
 mkdir -p /var/www/html/application/logs
 mkdir -p /var/www/html/application/cache
 mkdir -p /var/www/html/images
+mkdir -p /var/www/html/qr_code
 
 # Establecer permisos
 chown -R www-data:www-data /var/www/html
@@ -15,6 +16,7 @@ find /var/www/html -type f -exec chmod 644 {} \;
 chmod -R 777 /var/www/html/application/logs
 chmod -R 777 /var/www/html/application/cache
 chmod -R 777 /var/www/html/images
+chmod -R 777 /var/www/html/qr_code
 
 # Ejecutar Apache
 exec "$@"
