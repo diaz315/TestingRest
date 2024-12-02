@@ -51,7 +51,7 @@ if(isset($food_menus) && $food_menus):
     $delivery_price_outlet = (array)json_decode($outlet_information->delivery_price);
     $language_manifesto = $getCompanyInfo->language_manifesto;
 
-     $sale_price_delivery_details = getSalePriceDetails($delivery_price_outlet["index_38"]);;
+    //$sale_price_delivery_details = getSalePriceDetails($delivery_price_outlet["index_38"]);;
 
 foreach($food_menus as $single_menus){
     $sale_price_take = $single_menus->sale_price;
